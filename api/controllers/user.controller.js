@@ -1,16 +1,9 @@
 import prisma from "../library/prisma.js";
-
+import bcrypt from "bcrypt";
 
 export const getUsers = async (req, res) => {   
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        // Don't return sensitive data like passwords
-      }
-    });
+    const users = await prisma.user.findMany();
     res.status(200).json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -20,16 +13,11 @@ export const getUsers = async (req, res) => {
 
 export const getUser = async (req, res) => {   
   try {
-    const { id } = req.params;
+    const { id } = req.params.id;
     const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        // Other non-sensitive fields
-      }
+      where: { id }
     });
+    res.status(200).json(user);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -42,39 +30,66 @@ export const getUser = async (req, res) => {
   }
 }   
 
-export const updateUser = async (req, res) => {   
+export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email } = req.body;
+    const tokenUserId = req.userId;
+    const { password, ...inputs } = req.body;
 
-    // Verify the user is updating their own account
-    if (id !== req.userId) {
+    if (id !== tokenUserId) {
       return res.status(403).json({ message: "You can only update your own account" });
+    }
+
+    let avatarUrl;
+    if (req.file) {
+      avatarUrl = `/uploads/${req.file.filename}`;
+      // Delete old avatar if exists
+      if (req.body.oldAvatar) {
+        const oldAvatarPath = path.join(__dirname, '../public', req.body.oldAvatar);
+        if (fs.existsSync(oldAvatarPath)) {
+          fs.unlinkSync(oldAvatarPath);
+        }
+      }
+    }
+
+    let updatedPassword;
+    if (password) {
+      updatedPassword = await bcrypt.hash(password, 10);
     }
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { username, email },
+      data: {
+        ...inputs,
+        ...(updatedPassword && { password: updatedPassword }),
+        ...(avatarUrl && { avatar: avatarUrl }),
+      },
       select: {
         id: true,
         username: true,
         email: true,
+        avatar: true,
+        createdAt: true
       }
     });
 
     res.status(200).json(updatedUser);
   } catch (error) {
     console.error("Error updating user:", error);
-    res.status(500).json({ message: "Failed to update user", error: error.message });
+    res.status(500).json({ 
+      message: "Failed to update user", 
+      error: error.message 
+    });
   }
-}   
+}; 
 
 export const deleteUser = async (req, res) => {   
   try {
-    const { id } = req.params;
 
-    // Verify the user is deleting their own account
-    if (id !== req.userId) {
+    const { id } = req.params; // Fix destructuring
+    const tokenUserId = req.userId; // Changed from req.tokenUserId to req.userId
+
+    if (id !== tokenUserId) {
       return res.status(403).json({ message: "You can only delete your own account" });
     }
 

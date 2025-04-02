@@ -4,12 +4,11 @@ import { AuthContext } from "../../context/authContext";
 import apiRequest from "../../lib/apiRequest";
 import { useNavigate } from "react-router-dom";
 
-
 function ProfileUpdatePage() {
   const { currentUser, updateUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [avatar, setAvatar] = useState(null);
+  const [avatar, setAvatar] = useState(currentUser.avatar || null);
   const [formData, setFormData] = useState({
     username: currentUser?.username || "",
     email: currentUser?.email || "",
@@ -35,31 +34,21 @@ function ProfileUpdatePage() {
     setLoading(true);
     setError(null);
 
+    const formDataToSend = new FormData();
+    formDataToSend.append('username', formData.username);
+    formDataToSend.append('email', formData.email);
+    if (formData.password) formDataToSend.append('password', formData.password);
+    if (avatar && avatar instanceof File) formDataToSend.append('avatar', avatar);
+    if (currentUser.avatar) formDataToSend.append('oldAvatar', currentUser.avatar);
+
     try {
-      let avatarUrl = currentUser.avatar;
-      
-      // Upload new avatar if selected
-      if (avatar) {
-        avatarUrl = await uploadFile(avatar);
-      }
-
-      // Prepare update data
-      const updateData = {
-        ...formData,
-        avatar: avatarUrl
-      };
-
-      // Remove password field if empty
-      if (!updateData.password) {
-        delete updateData.password;
-      }
-
-      const response = await apiRequest.put("/user", updateData);
-      
-      // Update context and redirect
-      updateUser(response.data.user);
+      const res = await apiRequest.put(`/users/${currentUser.id}`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      updateUser(res.data);
       navigate("/profile");
-      
     } catch (err) {
       console.error("Update error:", err);
       setError(err.response?.data?.message || "Update failed. Please try again.");
@@ -135,7 +124,7 @@ function ProfileUpdatePage() {
       <div className="sideContainer">
         <div className="avatarPreview">
           <img 
-            src={avatar ? URL.createObjectURL(avatar) : currentUser.avatar || "/noavatar.jpeg"} 
+            src={avatar ? (avatar instanceof File ? URL.createObjectURL(avatar) : avatar) : "/noavatar.jpeg"} 
             alt="Profile preview" 
           />
           <p>Preview</p>

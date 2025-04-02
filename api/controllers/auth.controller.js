@@ -53,7 +53,7 @@ export const login = async (req, res) => {
     if (!isPasswordCorrect) return res.status(400).json({ error: "Wrong password!" });
     
     const age = 1000 * 60 * 60 * 24 * 7; // 1 week
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY, { expiresIn: age });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: age });
 
     // Remove password and send complete user info
     const { password: _, ...userData } = user;

@@ -1,22 +1,14 @@
 import express from "express";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { addPost, deletePost, getPost, getPosts, updatePost } from "../controllers/post.controller.js";
 
 
 const router = express.Router();
 
-/* router.get("/test", (req, res) => {
-  res.send("Hello from post route");
-});
-
-router.post("/test", (req, res) => {
-    res.send("Hello from post route");
-});
-
-router.put("/test", (req, res) => {
-res.send("Hello from post route");
-});
-
-router.delete("/test", (req, res) => {
-    res.send("Hello from post route");
-}); */
+router.get("/", getPosts);
+router.get("/:id", getPost);
+router.post("/",verifyToken, addPost);
+router.put("/:id",verifyToken, updatePost); // Combined route
+router.delete("/:id",verifyToken, deletePost);
 
 export default router;
