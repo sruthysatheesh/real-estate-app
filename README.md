@@ -52,33 +52,39 @@ Git
 Setup Instructions
 Clone the repository
 
-bash
+```bash
 git clone https://github.com/yourusername/real-estate-app.git
 cd real-estate-app
+```
 Install dependencies
 
-bash
+```bash
 # Install server dependencies
 cd app
 npm install
 
+
 # Install client dependencies
 cd ../client
 npm install
+```
+
 Environment Setup
 
 Create a .env file in the server directory with the following variables:
 
-MONGODB_URI=your_mongodb_connection_string
+```MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
 Run the application
+```
 
-bash
+```bash
 # In app directory
 node app.js
 
 # In client directory
 npm run dev
+```
 
 Map Integration
 The application uses OpenStreetMap with Leaflet.js for:
